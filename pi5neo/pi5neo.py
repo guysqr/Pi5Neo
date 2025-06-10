@@ -16,9 +16,11 @@ class LEDColor:
         self.white = white
 
 class Pi5Neo:
-    def __init__(self, spi_device='/dev/spidev0.0', num_leds=10, spi_speed_khz=800, pixel_type=EPixelType.RGB):
-        """Initialize the Pi5Neo class with SPI device, number of LEDs, speed, and pixel type"""
+    def __init__(self, spi_device='/dev/spidev0.0', num_leds=10, spi_speed_khz=800, pixel_type=EPixelType.RGB, quiet_mode=False):
+        """Initialize the Pi5Neo class with SPI device, number of LEDs, speed, pixel type, and optional quiet mode"""
         self.num_leds = num_leds
+        self.pixel_type = pixel_type
+        self.quiet_mode = quiet_mode
         self.spi_speed = spi_speed_khz * 1024 * 8  # Convert kHz to bytes per second
         self.spi = spidev.SpiDev()  # Create SPI device instance
 
@@ -35,21 +37,23 @@ class Pi5Neo:
         self.led_state = [LEDColor()] * self.num_leds  # Initial state for each LED (off)
 
         # Open the SPI device
-        if self.open_spi_device(spi_device):
+        if self.open_spi_device(spi_device, quiet_mode):
             time.sleep(0.1)  # Short delay to ensure device is ready
             self.clear_strip()  # Clear the strip on startup
             self.update_strip()
 
-    def open_spi_device(self, device_path):
+    def open_spi_device(self, device_path, quiet_mode):
         """Open the SPI device with the provided path"""
         try:
             bus, device = map(int, device_path[-3:].split('.'))
             self.spi.open(bus, device)
             self.spi.max_speed_hz = self.spi_speed
-            print(f"Opened SPI device: {device_path}")
+            if quiet_mode == False:
+                print(f"Opened SPI device: {device_path}")
             return True
         except Exception as e:
-            print(f"Failed to open SPI device: {e}")
+            if quiet_mode == False:
+                print(f"Failed to open SPI device: {e}")
             return False
 
     def send_spi_data(self):
